@@ -4,10 +4,22 @@ import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteTsConfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig({
-  server: { port: 3000 },
+  server: {
+    port: 3000,
+    host: true,
+  },
+  optimizeDeps: {
+    exclude: ["@prisma/client", ".prisma"],
+  },
+  ssr: {
+    noExternal: ["whop-kit"],
+  },
   plugins: [
     viteTsConfigPaths(),
-    tanstackStart(),
-    react(),
+    tanstackStart({
+      react: {
+        babel: {}, // let tanstackStart handle React
+      },
+    }),
   ],
 });

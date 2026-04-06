@@ -1,55 +1,246 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { getSubscriptionDetails } from "../../lib/subscription";
 import { getSession } from "../../lib/auth";
+import { getPlansConfig, type PlansConfig } from "../../lib/config";
+import { DEFAULT_PLAN, PLAN_KEYS, type PlanKey } from "../../lib/constants";
+import { PlanGate } from "../../components/plan-gate";
+import { UpgradeBanner } from "../../components/dashboard/upgrade-banner";
+import { ReactivateBanner } from "../../components/dashboard/reactivate-banner";
+import { ActivityFeed } from "../../components/dashboard/activity-feed";
 
 const getDashboardData = createServerFn({ method: "GET" }).handler(async () => {
-  const session = await getSession();
-  if (!session) return { subscription: null };
-  const result = await getSubscriptionDetails(session.userId);
-  return { subscription: result.hasSubscription ? result.subscription : null };
+  const [session, plans] = await Promise.all([getSession(), getPlansConfig()]);
+  return { session, plans };
 });
 
 export const Route = createFileRoute("/dashboard/")({
   loader: () => getDashboardData(),
-  component: DashboardHome,
+  head: () => ({
+    meta: [{ title: "Dashboard | Whop SaaS Starter" }],
+  }),
+  component: DashboardPage,
 });
 
-function DashboardHome() {
-  const { session } = Route.useRouteContext();
-  const { subscription } = Route.useLoaderData();
+function DashboardPage() {
+  const { session: routeSession, plans } = Route.useLoaderData();
+  const { session: contextSession } = Route.useRouteContext();
+  const session = routeSession ?? contextSession;
+
+  if (!session) return null;
+
+  const planConfig = plans[session.plan as PlanKey] ?? plans[DEFAULT_PLAN];
+  const nextPlanKey = PLAN_KEYS[PLAN_KEYS.indexOf(session.plan as PlanKey) + 1] as PlanKey | undefined;
 
   return (
-    <>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16, marginBottom: 32 }}>
-        <div style={{ background: "white", border: "1px solid #e4e4e7", borderRadius: 12, padding: 24 }}>
-          <p style={{ fontSize: 12, color: "#71717a", textTransform: "uppercase", marginBottom: 4, marginTop: 0 }}>Plan</p>
-          <p style={{ fontSize: 24, fontWeight: 600, textTransform: "capitalize", margin: 0 }}>{session.plan}</p>
-        </div>
-        <div style={{ background: "white", border: "1px solid #e4e4e7", borderRadius: 12, padding: 24 }}>
-          <p style={{ fontSize: 12, color: "#71717a", textTransform: "uppercase", marginBottom: 4, marginTop: 0 }}>Name</p>
-          <p style={{ fontSize: 24, fontWeight: 600, margin: 0 }}>{session.name || "—"}</p>
-        </div>
-        <div style={{ background: "white", border: "1px solid #e4e4e7", borderRadius: 12, padding: 24 }}>
-          <p style={{ fontSize: 12, color: "#71717a", textTransform: "uppercase", marginBottom: 4, marginTop: 0 }}>Role</p>
-          <p style={{ fontSize: 24, fontWeight: 600, margin: 0 }}>{session.isAdmin ? "Admin" : "Member"}</p>
-        </div>
+    <div className="mx-auto max-w-4xl space-y-6">
+      {/* Welcome */}
+      <div className="animate-slide-up">
+        <h1 className="text-lg font-semibold tracking-tight">
+          Welcome back{session.name ? `, ${session.name}` : ""}
+        </h1>
+        <p className="mt-0.5 text-sm text-[var(--muted)]">
+          Here&apos;s an overview of your account.
+        </p>
       </div>
 
-      {subscription?.status === "canceling" && (
-        <div style={{ background: "#fef3c7", border: "1px solid #f59e0b", borderRadius: 12, padding: 16, marginBottom: 24 }}>
-          <p style={{ margin: 0, fontSize: 14 }}>Your subscription will cancel at the end of the current period.</p>
+      {/* Stats */}
+      <div className="animate-slide-up delay-100 grid gap-px overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--border)] sm:grid-cols-3">
+        <StatCard label="Current Plan" value={planConfig.name} />
+        <StatCard label="Projects" value="0 / 3" />
+        <StatCard label="Storage" value="0 GB" />
+      </div>
+
+      {/* Reactivate banner for users with pending cancellation */}
+      {session.cancelAtPeriodEnd && session.plan !== DEFAULT_PLAN && (
+        <div className="animate-slide-up delay-200">
+          <ReactivateBanner />
         </div>
       )}
 
-      <div style={{ border: "1px solid #e4e4e7", borderRadius: 12, padding: 24, background: "white" }}>
-        <h2 style={{ fontSize: 16, fontWeight: 600, marginTop: 0, marginBottom: 12 }}>Your app goes here</h2>
-        <p style={{ fontSize: 14, color: "#71717a", lineHeight: 1.6, margin: 0 }}>
-          This template uses <a href="https://www.npmjs.com/package/whop-kit" style={{ color: "#2563eb" }}>whop-kit</a> for
-          authentication, session management, and subscription handling. Built with TanStack Start for
-          type-safe routing and server functions.
-        </p>
+      {/* Upgrade banner for free users */}
+      {session.plan === DEFAULT_PLAN && (
+        <div className="animate-slide-up delay-200">
+          <UpgradeBanner />
+        </div>
+      )}
+
+      {/* Your Plan -- shows included features */}
+      <div className="animate-slide-up delay-200 rounded-xl border border-[var(--border)] bg-[var(--card)] p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h3 className="text-sm font-semibold">
+              {planConfig.name} Plan
+            </h3>
+            <p className="mt-0.5 text-xs text-[var(--muted)]">{planConfig.description}</p>
+          </div>
+          {nextPlanKey && (
+            <Link
+              to="/pricing"
+              className="shrink-0 rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs font-medium transition-colors hover:bg-[var(--surface)]"
+            >
+              View Plans
+            </Link>
+          )}
+        </div>
+        <ul className="mt-4 grid gap-2 sm:grid-cols-2">
+          {planConfig.features.map((feature) => (
+            <li key={feature} className="flex items-start gap-2 text-xs text-[var(--muted)]">
+              <svg className="h-3.5 w-3.5 text-emerald-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+              </svg>
+              <span>{feature}</span>
+            </li>
+          ))}
+        </ul>
       </div>
-    </>
+
+      {/* Plan-gated content demo */}
+      <div className="animate-slide-up delay-300 space-y-4">
+        <PlanGate
+          plan={session.plan}
+          minimum="starter"
+          fallback={
+            <div className="rounded-xl border border-dashed border-[var(--border)] bg-[var(--card)] p-5">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <svg className="h-4 w-4 text-[var(--muted)]" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                    </svg>
+                    <h3 className="text-sm font-semibold text-[var(--muted)]">Advanced Analytics</h3>
+                  </div>
+                  <p className="mt-1 text-xs text-[var(--muted)]">
+                    Upgrade to Starter or above to unlock analytics, integrations, and more.
+                  </p>
+                </div>
+                <Link
+                  to="/pricing"
+                  className="shrink-0 rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs font-medium transition-colors hover:bg-[var(--surface)]"
+                >
+                  Upgrade
+                </Link>
+              </div>
+            </div>
+          }
+        >
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-5">
+            <h3 className="text-sm font-semibold">Advanced Analytics</h3>
+            <p className="mt-1 text-xs text-[var(--muted)]">
+              Replace this with your analytics dashboard, reports, or any Starter+ feature.
+            </p>
+            <div className="mt-4 grid gap-px overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--border)] sm:grid-cols-3">
+              <div className="bg-[var(--card)] p-4">
+                <p className="text-xs text-[var(--muted)]">Page Views</p>
+                <p className="mt-1 text-lg font-semibold" style={{ fontVariantNumeric: "tabular-nums" }}>1,234</p>
+              </div>
+              <div className="bg-[var(--card)] p-4">
+                <p className="text-xs text-[var(--muted)]">Conversion</p>
+                <p className="mt-1 text-lg font-semibold" style={{ fontVariantNumeric: "tabular-nums" }}>3.2%</p>
+              </div>
+              <div className="bg-[var(--card)] p-4">
+                <p className="text-xs text-[var(--muted)]">Revenue</p>
+                <p className="mt-1 text-lg font-semibold" style={{ fontVariantNumeric: "tabular-nums" }}>$5,678</p>
+              </div>
+            </div>
+          </div>
+        </PlanGate>
+
+        <PlanGate
+          plan={session.plan}
+          minimum="pro"
+          fallback={
+            PLAN_KEYS.indexOf(session.plan as PlanKey) >= PLAN_KEYS.indexOf("starter" as PlanKey) ? (
+              <div className="rounded-xl border border-dashed border-[var(--border)] bg-[var(--card)] p-5">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <svg className="h-4 w-4 text-[var(--muted)]" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" aria-hidden="true">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                      </svg>
+                      <h3 className="text-sm font-semibold text-[var(--muted)]">API Access</h3>
+                    </div>
+                    <p className="mt-1 text-xs text-[var(--muted)]">
+                      Upgrade to Pro to unlock API access, SSO, and dedicated support.
+                    </p>
+                  </div>
+                  <Link
+                    to="/pricing"
+                    className="shrink-0 rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs font-medium transition-colors hover:bg-[var(--surface)]"
+                  >
+                    Upgrade
+                  </Link>
+                </div>
+              </div>
+            ) : null
+          }
+        >
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-5">
+            <h3 className="text-sm font-semibold">API Access</h3>
+            <p className="mt-1 text-xs text-[var(--muted)]">
+              Replace this with your API dashboard, key management, or any Pro-only feature.
+            </p>
+            <div className="mt-4 rounded-lg bg-[var(--surface)] p-3 font-mono text-xs text-[var(--muted)]">
+              <span className="text-emerald-500">GET</span> /api/v1/data <span className="text-[var(--muted)]/60">→ 200 OK</span>
+            </div>
+          </div>
+        </PlanGate>
+      </div>
+
+      {/* Activity feed */}
+      <div className="animate-slide-up delay-400">
+        <ActivityFeed />
+      </div>
+
+      {/* Get started steps */}
+      <div className="animate-slide-up delay-500 rounded-xl border border-[var(--border)] bg-[var(--card)] p-6">
+        <h2 className="text-sm font-semibold">Get started</h2>
+        <p className="mt-1 text-xs text-[var(--muted)] leading-relaxed">
+          Replace this with your product. Auth, payments, and webhooks are ready.
+        </p>
+
+        <div className="mt-5 space-y-2.5">
+          <Step number={1} title="Customize this dashboard" done={false} />
+          <Step number={2} title="Set up your Whop plans" done={false} />
+          <Step number={3} title="Configure webhook endpoint" done={false} />
+          <Step number={4} title="Deploy to Vercel" done={false} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StatCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="bg-[var(--card)] p-5">
+      <p className="text-xs text-[var(--muted)]">{label}</p>
+      <p className="mt-1 text-xl font-semibold tracking-tight" style={{ fontVariantNumeric: "tabular-nums" }}>{value}</p>
+    </div>
+  );
+}
+
+function Step({
+  number,
+  title,
+  done,
+}: {
+  number: number;
+  title: string;
+  done: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <div
+        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-xs font-medium ${
+          done
+            ? "bg-emerald-500/10 text-emerald-600"
+            : "bg-[var(--surface)] text-[var(--muted)]"
+        }`}
+      >
+        {done ? "\u2713" : number}
+      </div>
+      <span className={`text-sm ${done ? "line-through text-[var(--muted)]" : ""}`}>
+        {title}
+      </span>
+    </div>
   );
 }

@@ -42,4 +42,18 @@ export type PlanKey = keyof typeof PLAN_METADATA;
 export const PLAN_KEYS = plans.keys;
 export const PLAN_RANK = plans.ranks as Record<string, number>;
 export const DEFAULT_PLAN = plans.defaultPlan;
+
 export const getPlanBillingIntervals = plans.getBillingIntervals;
+export const planConfigKey = plans.configKey;
+export const planConfigKeyYearly = plans.configKeyYearly;
+export const planPriceConfigKey = plans.priceConfigKey;
+export const planPriceConfigKeyYearly = plans.priceConfigKeyYearly;
+export const planNameConfigKey = plans.nameConfigKey;
+
+/** Env var naming convention: WHOP_{PLAN_KEY}_PLAN_ID */
+export function planEnvVar(planKey: PlanKey): string {
+  return `WHOP_${planKey.toUpperCase()}_PLAN_ID`;
+}
+export function planEnvVarYearly(planKey: PlanKey): string {
+  return `WHOP_${planKey.toUpperCase()}_PLAN_ID_YEARLY`;
+}

@@ -1,50 +1,84 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { APP_NAME, PLAN_METADATA } from "../lib/constants";
+import { createServerFn } from "@tanstack/react-start";
+import { getPlansConfig, type PlansConfig } from "../lib/config";
+import { Header } from "../components/landing/header";
+import { PricingCards } from "../components/landing/pricing-cards";
+import { Footer } from "../components/landing/footer";
+
+const FAQ = [
+  {
+    q: "Can I cancel my subscription?",
+    a: "Yes, you can cancel anytime. Your access continues until the end of your billing period.",
+  },
+  {
+    q: "What payment methods do you accept?",
+    a: "All major credit cards and PayPal through Whop.",
+  },
+  {
+    q: "Is there a free trial?",
+    a: "The Free plan gives you access to core features. Upgrade when you need more.",
+  },
+  {
+    q: "Can I change plans?",
+    a: "Yes, upgrade or downgrade at any time. Changes take effect immediately.",
+  },
+];
+
+const getPricingData = createServerFn({ method: "GET" }).handler(async () => {
+  const plans = await getPlansConfig();
+  return { plans };
+});
 
 export const Route = createFileRoute("/pricing")({
+  loader: () => getPricingData(),
+  head: () => ({
+    meta: [
+      { title: "Pricing | Whop SaaS Starter" },
+      { name: "description", content: "Simple, transparent pricing for every stage of your business." },
+    ],
+  }),
   component: PricingPage,
 });
 
 function PricingPage() {
-  return (
-    <main style={{ maxWidth: 900, margin: "0 auto", padding: "64px 24px", textAlign: "center" }}>
-      <h1 style={{ fontSize: 36, fontWeight: 700, marginBottom: 8 }}>Simple pricing</h1>
-      <p style={{ color: "#71717a", marginBottom: 48 }}>Choose the plan that works for you</p>
+  const { plans } = Route.useLoaderData();
 
-      <div style={{ display: "flex", gap: 24, justifyContent: "center", flexWrap: "wrap" }}>
-        {Object.entries(PLAN_METADATA).map(([key, plan]) => (
-          <div key={key} style={{
-            border: `1px solid ${plan.highlighted ? "#5b4cff" : "#e4e4e7"}`,
-            borderRadius: 12, padding: 32, width: 280, background: "white", textAlign: "left",
-            transform: plan.highlighted ? "scale(1.05)" : undefined,
-            boxShadow: plan.highlighted ? "0 4px 24px rgba(91, 76, 255, 0.15)" : undefined,
-          }}>
-            <h3 style={{ fontSize: 20, fontWeight: 600, marginTop: 0, marginBottom: 8 }}>{plan.name}</h3>
-            <p style={{ fontSize: 14, color: "#71717a", marginBottom: 16 }}>{plan.description}</p>
-            <div style={{ marginBottom: 24 }}>
-              <span style={{ fontSize: 32, fontWeight: 700 }}>
-                {plan.priceMonthly === 0 ? "Free" : `$${plan.priceMonthly}`}
-              </span>
-              {plan.priceMonthly > 0 && <span style={{ color: "#71717a" }}>/mo</span>}
-            </div>
-            <ul style={{ listStyle: "none", padding: 0, margin: "0 0 24px 0" }}>
-              {plan.features.map((f) => (
-                <li key={f} style={{ fontSize: 14, padding: "4px 0", color: "#3f3f46" }}>✓ {f}</li>
-              ))}
-            </ul>
-            <a
-              href="/auth/login"
-              style={{
-                display: "block", textAlign: "center", padding: "10px", borderRadius: 8, textDecoration: "none", fontWeight: 500,
-                background: plan.highlighted ? "#5b4cff" : "#18181b",
-                color: "white",
-              }}
-            >
-              {key === "free" ? "Get Started" : "Subscribe"}
-            </a>
+  return (
+    <div className="flex min-h-screen flex-col">
+      <Header />
+      <main id="main-content" className="flex-1">
+        <section className="mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-24">
+          <div className="text-center mb-12">
+            <h1 className="text-2xl font-semibold tracking-tight text-balance sm:text-3xl">
+              Pricing
+            </h1>
+            <p className="mt-2 text-sm text-[var(--muted)]">
+              Start free. Upgrade when you&apos;re ready. Cancel anytime.
+            </p>
           </div>
-        ))}
-      </div>
-    </main>
+          <PricingCards plans={plans} />
+        </section>
+
+        {/* FAQ */}
+        <section className="border-t border-[var(--border)]">
+          <div className="mx-auto max-w-2xl px-4 py-24 sm:px-6">
+            <h2 className="text-lg font-semibold text-center mb-10">
+              Frequently asked questions
+            </h2>
+            <div className="space-y-6">
+              {FAQ.map((faq) => (
+                <div key={faq.q}>
+                  <h3 className="text-sm font-semibold">{faq.q}</h3>
+                  <p className="mt-1 text-sm text-[var(--muted)] leading-relaxed">
+                    {faq.a}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      </main>
+      <Footer />
+    </div>
   );
 }

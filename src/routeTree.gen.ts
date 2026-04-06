@@ -9,15 +9,25 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SetupRouteImport } from './routes/setup'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as AuthErrorRouteImport } from './routes/auth-error'
 import { Route as DashboardRouteRouteImport } from './routes/dashboard/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
+import { Route as CheckoutIndexRouteImport } from './routes/checkout/index'
+import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settings'
+import { Route as CheckoutSuccessRouteImport } from './routes/checkout/success'
 import { Route as AuthLogoutRouteImport } from './routes/auth/logout'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
 import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
 
+const SetupRoute = SetupRouteImport.update({
+  id: '/setup',
+  path: '/setup',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PricingRoute = PricingRouteImport.update({
   id: '/pricing',
   path: '/pricing',
@@ -26,6 +36,11 @@ const PricingRoute = PricingRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthErrorRoute = AuthErrorRouteImport.update({
+  id: '/auth-error',
+  path: '/auth-error',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardRouteRoute = DashboardRouteRouteImport.update({
@@ -42,6 +57,21 @@ const DashboardIndexRoute = DashboardIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => DashboardRouteRoute,
+} as any)
+const CheckoutIndexRoute = CheckoutIndexRouteImport.update({
+  id: '/checkout/',
+  path: '/checkout/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardSettingsRoute = DashboardSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
+const CheckoutSuccessRoute = CheckoutSuccessRouteImport.update({
+  id: '/checkout/success',
+  path: '/checkout/success',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthLogoutRoute = AuthLogoutRouteImport.update({
   id: '/auth/logout',
@@ -62,31 +92,46 @@ const AuthCallbackRoute = AuthCallbackRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteRouteWithChildren
+  '/auth-error': typeof AuthErrorRoute
   '/login': typeof LoginRoute
   '/pricing': typeof PricingRoute
+  '/setup': typeof SetupRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/logout': typeof AuthLogoutRoute
+  '/checkout/success': typeof CheckoutSuccessRoute
+  '/dashboard/settings': typeof DashboardSettingsRoute
+  '/checkout/': typeof CheckoutIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth-error': typeof AuthErrorRoute
   '/login': typeof LoginRoute
   '/pricing': typeof PricingRoute
+  '/setup': typeof SetupRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/logout': typeof AuthLogoutRoute
+  '/checkout/success': typeof CheckoutSuccessRoute
+  '/dashboard/settings': typeof DashboardSettingsRoute
+  '/checkout': typeof CheckoutIndexRoute
   '/dashboard': typeof DashboardIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteRouteWithChildren
+  '/auth-error': typeof AuthErrorRoute
   '/login': typeof LoginRoute
   '/pricing': typeof PricingRoute
+  '/setup': typeof SetupRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/logout': typeof AuthLogoutRoute
+  '/checkout/success': typeof CheckoutSuccessRoute
+  '/dashboard/settings': typeof DashboardSettingsRoute
+  '/checkout/': typeof CheckoutIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
 }
 export interface FileRouteTypes {
@@ -94,45 +139,71 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/dashboard'
+    | '/auth-error'
     | '/login'
     | '/pricing'
+    | '/setup'
     | '/auth/callback'
     | '/auth/login'
     | '/auth/logout'
+    | '/checkout/success'
+    | '/dashboard/settings'
+    | '/checkout/'
     | '/dashboard/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/auth-error'
     | '/login'
     | '/pricing'
+    | '/setup'
     | '/auth/callback'
     | '/auth/login'
     | '/auth/logout'
+    | '/checkout/success'
+    | '/dashboard/settings'
+    | '/checkout'
     | '/dashboard'
   id:
     | '__root__'
     | '/'
     | '/dashboard'
+    | '/auth-error'
     | '/login'
     | '/pricing'
+    | '/setup'
     | '/auth/callback'
     | '/auth/login'
     | '/auth/logout'
+    | '/checkout/success'
+    | '/dashboard/settings'
+    | '/checkout/'
     | '/dashboard/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardRouteRoute: typeof DashboardRouteRouteWithChildren
+  AuthErrorRoute: typeof AuthErrorRoute
   LoginRoute: typeof LoginRoute
   PricingRoute: typeof PricingRoute
+  SetupRoute: typeof SetupRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   AuthLoginRoute: typeof AuthLoginRoute
   AuthLogoutRoute: typeof AuthLogoutRoute
+  CheckoutSuccessRoute: typeof CheckoutSuccessRoute
+  CheckoutIndexRoute: typeof CheckoutIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/setup': {
+      id: '/setup'
+      path: '/setup'
+      fullPath: '/setup'
+      preLoaderRoute: typeof SetupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/pricing': {
       id: '/pricing'
       path: '/pricing'
@@ -145,6 +216,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth-error': {
+      id: '/auth-error'
+      path: '/auth-error'
+      fullPath: '/auth-error'
+      preLoaderRoute: typeof AuthErrorRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -167,6 +245,27 @@ declare module '@tanstack/react-router' {
       fullPath: '/dashboard/'
       preLoaderRoute: typeof DashboardIndexRouteImport
       parentRoute: typeof DashboardRouteRoute
+    }
+    '/checkout/': {
+      id: '/checkout/'
+      path: '/checkout'
+      fullPath: '/checkout/'
+      preLoaderRoute: typeof CheckoutIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/settings': {
+      id: '/dashboard/settings'
+      path: '/settings'
+      fullPath: '/dashboard/settings'
+      preLoaderRoute: typeof DashboardSettingsRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
+    '/checkout/success': {
+      id: '/checkout/success'
+      path: '/checkout/success'
+      fullPath: '/checkout/success'
+      preLoaderRoute: typeof CheckoutSuccessRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/auth/logout': {
       id: '/auth/logout'
@@ -193,10 +292,12 @@ declare module '@tanstack/react-router' {
 }
 
 interface DashboardRouteRouteChildren {
+  DashboardSettingsRoute: typeof DashboardSettingsRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
 }
 
 const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
+  DashboardSettingsRoute: DashboardSettingsRoute,
   DashboardIndexRoute: DashboardIndexRoute,
 }
 
@@ -207,11 +308,15 @@ const DashboardRouteRouteWithChildren = DashboardRouteRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRouteRoute: DashboardRouteRouteWithChildren,
+  AuthErrorRoute: AuthErrorRoute,
   LoginRoute: LoginRoute,
   PricingRoute: PricingRoute,
+  SetupRoute: SetupRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   AuthLoginRoute: AuthLoginRoute,
   AuthLogoutRoute: AuthLogoutRoute,
+  CheckoutSuccessRoute: CheckoutSuccessRoute,
+  CheckoutIndexRoute: CheckoutIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

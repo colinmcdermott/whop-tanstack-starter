@@ -1,14 +1,61 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { APP_NAME } from "../lib/constants";
+import { LINKS } from "../lib/constants";
+import { AppLogo } from "../components/app-logo";
 
 export const Route = createFileRoute("/login")({
-  component: () => (
-    <main style={{ maxWidth: 400, margin: "0 auto", padding: "128px 24px", textAlign: "center" }}>
-      <h1 style={{ fontSize: 24, fontWeight: 600, marginBottom: 8 }}>Sign in to {APP_NAME}</h1>
-      <p style={{ color: "#71717a", marginBottom: 32 }}>Continue with your Whop account</p>
-      <a href="/auth/login" style={{ display: "inline-block", background: "#18181b", color: "white", padding: "12px 32px", borderRadius: 8, textDecoration: "none", fontWeight: 500 }}>
-        Sign in with Whop
-      </a>
-    </main>
-  ),
+  validateSearch: (search: Record<string, unknown>) => ({
+    next: (search.next as string) ?? "/dashboard",
+  }),
+  head: () => ({
+    meta: [{ title: "Sign In | Whop SaaS Starter" }],
+  }),
+  component: LoginPage,
 });
+
+function LoginPage() {
+  const { next } = Route.useSearch();
+  const redirectPath = next ?? "/dashboard";
+
+  return (
+    <div className="flex min-h-screen items-center justify-center px-4">
+      <div className="w-full max-w-xs animate-slide-up">
+        <div className="text-center mb-8">
+          <a href="/">
+            <AppLogo />
+          </a>
+          <p className="mt-2 text-xs text-[var(--muted)]">
+            Sign in to your account
+          </p>
+        </div>
+
+        <a
+          href={`/auth/login?next=${encodeURIComponent(redirectPath)}`}
+          className="flex w-full items-center justify-center gap-2.5 rounded-lg bg-[var(--accent)] px-4 py-2.5 text-sm font-medium text-[var(--accent-foreground)] transition-opacity hover:opacity-80"
+        >
+          <WhopLogo />
+          Continue with Whop
+        </a>
+
+        <p className="mt-6 text-center text-[10px] text-[var(--muted)] leading-relaxed">
+          By continuing, you agree to our{" "}
+          <a href={LINKS.terms} className="underline underline-offset-4 hover:text-[var(--foreground)]">
+            Terms
+          </a>{" "}
+          and{" "}
+          <a href={LINKS.privacy} className="underline underline-offset-4 hover:text-[var(--foreground)]">
+            Privacy Policy
+          </a>
+          .
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function WhopLogo() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15l-5-5 1.41-1.41L11 14.17l7.59-7.59L20 8l-9 9z" />
+    </svg>
+  );
+}
