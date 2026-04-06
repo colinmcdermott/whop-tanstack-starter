@@ -19,6 +19,9 @@ export const Route = createRootRoute({
       { name: "theme-color", content: "#ffffff", media: "(prefers-color-scheme: light)" },
       { name: "theme-color", content: "#090909", media: "(prefers-color-scheme: dark)" },
     ],
+    links: [
+      { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
+    ],
   }),
   component: RootComponent,
   errorComponent: ErrorComponent,
