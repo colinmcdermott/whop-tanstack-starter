@@ -1,28 +1,40 @@
-import { createRootRoute, Outlet, ScrollRestoration } from "@tanstack/react-router";
-import { Meta, Scripts } from "@tanstack/react-start";
-import { APP_NAME, APP_DESCRIPTION } from "@/lib/constants";
+/// <reference types="vite/client" />
+import type { ReactNode } from "react";
+import {
+  Outlet,
+  createRootRoute,
+  HeadContent,
+  Scripts,
+} from "@tanstack/react-router";
 
 export const Route = createRootRoute({
   head: () => ({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: APP_NAME },
-      { name: "description", content: APP_DESCRIPTION },
+      { title: "Whop SaaS Starter" },
+      { name: "description", content: "Built with TanStack Start and whop-kit" },
     ],
   }),
-  component: RootLayout,
+  component: RootComponent,
 });
 
-function RootLayout() {
+function RootComponent() {
+  return (
+    <RootDocument>
+      <Outlet />
+    </RootDocument>
+  );
+}
+
+function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <html lang="en">
       <head>
-        <Meta />
+        <HeadContent />
       </head>
-      <body style={{ margin: 0, fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", color: "#18181b", background: "#fafafa" }}>
-        <Outlet />
-        <ScrollRestoration />
+      <body style={{ margin: 0, fontFamily: "system-ui, sans-serif", color: "#18181b", background: "#fafafa" }}>
+        {children}
         <Scripts />
       </body>
     </html>
