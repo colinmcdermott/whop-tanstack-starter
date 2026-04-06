@@ -1,11 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { APP_NAME, PLAN_METADATA } from "@/lib/constants";
-import { getSession } from "@/lib/auth";
+import { getSessionFromRequest } from "@/lib/auth";
+import { getRequestHeader } from "@tanstack/react-start/server";
 
 const getIndexData = createServerFn({ method: "GET" }).handler(async () => {
   let session = null;
-  try { session = await getSession(); } catch { /* DB not ready */ }
+  try {
+    const cookieHeader = getRequestHeader("cookie") ?? "";
+    session = await getSessionFromRequest(cookieHeader);
+  } catch { /* DB not ready */ }
   return { session };
 });
 

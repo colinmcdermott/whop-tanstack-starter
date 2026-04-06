@@ -1,9 +1,11 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { getSession } from "@/lib/auth";
+import { getSessionFromRequest } from "@/lib/auth";
+import { getRequestHeader } from "@tanstack/react-start/server";
 
 const requireAuth = createServerFn({ method: "GET" }).handler(async () => {
-  const session = await getSession();
+  const cookieHeader = getRequestHeader("cookie") ?? "";
+  const session = await getSessionFromRequest(cookieHeader);
   if (!session) throw redirect({ to: "/login" });
   return session;
 });

@@ -1,14 +1,10 @@
 import {
-  createSessionToken as _createSessionToken,
   verifySessionToken as _verifySessionToken,
-  setSessionCookie as _setSessionCookie,
-  clearSessionCookie as _clearSessionCookie,
-  getSessionFromCookie,
-  generateSecret,
   encodeSecret,
+  generateSecret,
 } from "whop-kit/auth";
 import type { Session as BaseSession } from "whop-kit/auth";
-import { tanstackCookieAdapter } from "./adapters/tanstack";
+import { requestCookieAdapter } from "./adapters/tanstack";
 import { prisma } from "../../db/index";
 import { PLAN_KEYS, DEFAULT_PLAN, PLAN_RANK, type PlanKey } from "./constants";
 
@@ -37,36 +33,41 @@ async function getSecret(): Promise<Uint8Array> {
   return cachedSecret;
 }
 
-const isProduction = process.env.NODE_ENV === "production";
+/**
+ * Get the session from a cookie header string.
+ * Used in server handlers and beforeLoad.
+ */
+export async function getSessionFromRequest(cookieHeader: string): Promise<Session | null> {
+  try {
+    const adapter = requestCookieAdapter(cookieHeader);
+    const token = adapter.get("session");
+    if (!token) return null;
 
-export async function createSessionToken(session: Session) {
-  return _createSessionToken(session, await getSecret());
+    const secret = await getSecret();
+    const session = await _verifySessionToken(token, secret, PLAN_KEYS, DEFAULT_PLAN);
+    if (!session) return null;
+
+    // Refresh plan from DB
+    const user = await prisma.user.findUnique({
+      where: { id: session.userId },
+      select: { plan: true, cancelAtPeriodEnd: true },
+    });
+    if (!user) return null;
+
+    const plan = PLAN_KEYS.includes(user.plan as PlanKey) ? (user.plan as PlanKey) : DEFAULT_PLAN;
+    return { ...session, plan, cancelAtPeriodEnd: user.cancelAtPeriodEnd } as Session;
+  } catch {
+    return null;
+  }
 }
 
-export async function setSessionCookie(session: Session) {
-  return _setSessionCookie(session, await getSecret(), tanstackCookieAdapter(), isProduction);
-}
-
-export async function clearSessionCookie() {
-  return _clearSessionCookie(tanstackCookieAdapter(), isProduction);
-}
-
+/**
+ * Get session - convenience for server functions that can access request headers.
+ */
 export async function getSession(): Promise<Session | null> {
-  const base = await getSessionFromCookie(
-    tanstackCookieAdapter(),
-    await getSecret(),
-    PLAN_KEYS,
-    DEFAULT_PLAN,
-    async (userId) => {
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-        select: { plan: true, cancelAtPeriodEnd: true },
-      });
-      if (!user) return null;
-      return { plan: user.plan, cancelAtPeriodEnd: user.cancelAtPeriodEnd };
-    },
-  );
-  return base as Session | null;
+  // In server functions, we need the cookie header passed explicitly
+  // This is a fallback that returns null — use getSessionFromRequest in handlers
+  return null;
 }
 
 export function hasMinimumPlan(userPlan: PlanKey, minimumPlan: PlanKey): boolean {

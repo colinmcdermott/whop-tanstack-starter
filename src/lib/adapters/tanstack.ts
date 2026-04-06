@@ -1,25 +1,26 @@
-import type { CookieAdapter, CookieOptions } from "whop-kit/auth";
-import { getCookie, setCookie, deleteCookie } from "vinxi/http";
+import type { CookieAdapter } from "whop-kit/auth";
 
 /**
- * Cookie adapter for TanStack Start using vinxi/http.
+ * Create a cookie adapter from a raw cookie header string.
+ * Used in TanStack Start server handlers where we only have the request.
  */
-export function tanstackCookieAdapter(): CookieAdapter {
+export function requestCookieAdapter(cookieHeader: string): CookieAdapter {
+  const cookies = Object.fromEntries(
+    cookieHeader.split(";").map((c) => {
+      const [key, ...rest] = c.trim().split("=");
+      return [key, rest.join("=")];
+    }),
+  );
+
   return {
     get(name: string) {
-      return getCookie(name);
+      return cookies[name];
     },
-    set(name: string, value: string, options: CookieOptions) {
-      setCookie(name, value, {
-        httpOnly: options.httpOnly,
-        secure: options.secure,
-        sameSite: options.sameSite,
-        maxAge: options.maxAge,
-        path: options.path,
-      });
+    set() {
+      // Server handlers set cookies via response headers, not adapter
     },
-    delete(name: string) {
-      deleteCookie(name);
+    delete() {
+      // Server handlers delete cookies via response headers
     },
   };
 }
